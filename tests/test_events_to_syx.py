@@ -7,6 +7,7 @@ from digitone_syx_toolkit.digitone2.constants import (
     CHECKSUM_SUM_START,
     EXPLICIT_LENGTH_CODE_TO_DISPLAY,
     TRACK_DEFAULT_VELOCITY_OFFSETS,
+    TRIGGER_MAX_SLOTS,
     TRIGGER_REGION_CONTROL_START,
     TRIGGER_REGION_PAYLOAD_START,
     TRIGGER_SLOT_SIZE,
@@ -48,6 +49,35 @@ def _pattern_name_packed_offsets() -> set[int]:
 
 def _write_events_yaml(path: Path, body: str) -> None:
     path.write_text(body, encoding="utf-8")
+
+
+def _write_dense_events_yaml(path: Path, event_count: int) -> None:
+    notes = [
+        "C1", "C#1", "D1", "D#1", "E1", "F1", "F#1", "G1",
+        "G#1", "A1", "A#1", "B1", "C2", "C#2", "D2", "D#2",
+    ]
+    event_rows = "".join(
+        (
+            f"  - step: {((index // 16) % 128) + 1}\n"
+            f"    track: {((index // (16 * 128)) % 16) + 1}\n"
+            f"    note: {notes[index % 16]}\n"
+            "    velocity: inherit\n"
+            "    length: inherit\n"
+        )
+        for index in range(event_count)
+    )
+    path.write_text(
+        "version: 1\n"
+        "device: digitone2\n"
+        "pattern:\n"
+        "  mode: pattern-wide\n"
+        "  tempo: 120\n"
+        "  speed: 1/8\n"
+        "  total_steps: 128\n"
+        "events:\n"
+        f"{event_rows}",
+        encoding="utf-8",
+    )
 
 
 def _read_trigger_slot_value(data: bytes, slot_index: int, rel: int) -> int:
@@ -390,34 +420,22 @@ def test_build_syx_from_events_accepts_track1_same_step_chord(tmp_path: Path):
     assert [_read_trigger_slot_value(built, 1, rel) for rel in range(6)] == [0x00, 0x00, 0x3E, 0xFF, 0xFF, 0x00]
 
 
-def test_build_syx_from_events_does_not_reject_more_than_128_note_events(tmp_path: Path):
-    events = tmp_path / "events_192.yaml"
-    event_rows = "".join(
-        (
-            f"  - step: {(index % 128) + 1}\n"
-            f"    track: {(index % 16) + 1}\n"
-            f"    note: C{1 + (index % 5)}\n"
-            "    velocity: inherit\n"
-            "    length: inherit\n"
-        )
-        for index in range(192)
-    )
-    events.write_text(
-        "version: 1\n"
-        "device: digitone2\n"
-        "pattern:\n"
-        "  mode: pattern-wide\n"
-        "  tempo: 120\n"
-        "  speed: 1/8\n"
-        "  total_steps: 128\n"
-        "events:\n"
-        f"{event_rows}",
-        encoding="utf-8",
-    )
+@pytest.mark.parametrize("event_count", [129, 144, TRIGGER_MAX_SLOTS])
+def test_build_syx_from_events_accepts_mapped_trigger_record_capacity(tmp_path: Path, event_count: int):
+    events = tmp_path / f"events_{event_count}.yaml"
+    _write_dense_events_yaml(events, event_count)
 
     result = build_syx_from_events(events_yaml=events, output_file=tmp_path / "out.syx")
 
-    assert result.written_events == 192
+    assert result.written_events == event_count
+
+
+def test_build_syx_from_events_rejects_beyond_mapped_trigger_record_capacity(tmp_path: Path):
+    events = tmp_path / "events_8193.yaml"
+    _write_dense_events_yaml(events, TRIGGER_MAX_SLOTS + 1)
+
+    with pytest.raises(SyxFileError, match="mapped Digitone II trigger record slots"):
+        build_syx_from_events(events_yaml=events, output_file=tmp_path / "out.syx")
 
 
 def test_build_syx_from_events_encodes_track8_chord_group_velocity_length_and_time(tmp_path: Path):

@@ -30,7 +30,10 @@ TRIGGER_REGION_CONTROL_START = 21714
 TRIGGER_REGION_PAYLOAD_START = 21715
 TRIGGER_SLOT0_PAYLOAD_INDEX = 5
 TRIGGER_SLOT_SIZE = 6
-TRIGGER_MAX_SLOTS = 128
+# Observed / inferred from empty pattern record area and hardware validation.
+# Slot 1..8192 are empty trigger records in the base template.
+# Slot 8193 no longer matches the empty trigger record shape.
+TRIGGER_MAX_SLOTS = 8192
 
 TRACK1_DEFAULT_VELOCITY_OFFSET = 1333
 TRACK1_DEFAULT_LENGTH_OFFSET = 1334
