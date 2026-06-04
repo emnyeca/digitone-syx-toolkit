@@ -266,8 +266,8 @@ def load_event_assignment_yaml(path: str | Path) -> EventAssignment:
 
         step = _as_int(raw_event.get("step"), "events[].step")
         track = _as_int(raw_event.get("track"), f"events[step={step}].track")
-        if track < 1 or track > 8:
-            raise SyxFileError(f"events step={step}: track must be 1..8")
+        if track < 1 or track > 16:
+            raise SyxFileError(f"events step={step}: track must be 1..16")
 
         max_step = total_steps if canonical_mode == "pattern-wide" else track_scale[track].length
         if step < 1 or step > max_step:
@@ -284,13 +284,9 @@ def load_event_assignment_yaml(path: str | Path) -> EventAssignment:
             raise SyxFileError(
                 f"events step={step} track={track}: duplicate note {note} is not allowed"
             )
-        if notes_for_pair and track != 8:
+        if len(notes_for_pair) >= 16:
             raise SyxFileError(
-                f"events step={step} track={track}: multiple notes on the same step are only supported on track 8"
-            )
-        if track == 8 and len(notes_for_pair) >= 16:
-            raise SyxFileError(
-                f"events step={step} track=8: chord note count exceeds Digitone II limit of 16"
+                f"events step={step} track={track}: chord note count exceeds Digitone II limit of 16"
             )
         notes_for_pair.add(note_midi)
 

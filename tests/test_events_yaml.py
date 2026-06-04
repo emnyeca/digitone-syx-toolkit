@@ -54,8 +54,8 @@ def test_load_event_assignment_yaml_valid(tmp_path: Path):
     assert parsed.events[0].time == 0
 
 
-def test_load_event_assignment_yaml_rejects_duplicate_step_track(tmp_path: Path):
-    yaml_path = tmp_path / "events_bad.yaml"
+def test_load_event_assignment_yaml_accepts_track1_same_step_chord(tmp_path: Path):
+    yaml_path = tmp_path / "events_track1_chord.yaml"
     yaml_path.write_text(
         "version: 1\n"
         "device: digitone2\n"
@@ -78,8 +78,11 @@ def test_load_event_assignment_yaml_rejects_duplicate_step_track(tmp_path: Path)
         encoding="utf-8",
     )
 
-    with pytest.raises(SyxFileError, match="only supported on track 8"):
-        load_event_assignment_yaml(yaml_path)
+    parsed = load_event_assignment_yaml(yaml_path)
+    assert [(event.track, event.step, event.note) for event in parsed.events] == [
+        (1, 1, "C5"),
+        (1, 1, "D5"),
+    ]
 
 
 def test_load_event_assignment_yaml_accepts_track8_chord_group_with_distinct_notes_and_time(tmp_path: Path):
@@ -304,8 +307,8 @@ def test_load_event_assignment_yaml_rejects_track_default_velocity_out_of_range(
         load_event_assignment_yaml(yaml_path)
 
 
-def test_load_event_assignment_yaml_rejects_track_9(tmp_path: Path):
-    yaml_path = tmp_path / "events_track9.yaml"
+def test_load_event_assignment_yaml_rejects_track_17(tmp_path: Path):
+    yaml_path = tmp_path / "events_track17.yaml"
     yaml_path.write_text(
         "version: 1\n"
         "device: digitone2\n"
@@ -316,14 +319,14 @@ def test_load_event_assignment_yaml_rejects_track_9(tmp_path: Path):
         "  total_steps: 64\n"
         "events:\n"
         "  - step: 1\n"
-        "    track: 9\n"
+        "    track: 17\n"
         "    note: C5\n"
         "    velocity: inherit\n"
         "    length: inherit\n",
         encoding="utf-8",
     )
 
-    with pytest.raises(SyxFileError, match="track must be 1..8"):
+    with pytest.raises(SyxFileError, match="track must be 1..16"):
         load_event_assignment_yaml(yaml_path)
 
 

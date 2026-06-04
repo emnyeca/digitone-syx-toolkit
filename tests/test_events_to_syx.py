@@ -357,8 +357,8 @@ def test_trigger_explicit_velocity_stays_explicit_with_track_default_velocity(tm
     assert _read_trigger_slot_value(built, 0, 3) == 70
 
 
-def test_build_syx_from_events_rejects_duplicate_step_track(tmp_path: Path):
-    events = tmp_path / "events_bad.yaml"
+def test_build_syx_from_events_accepts_track1_same_step_chord(tmp_path: Path):
+    events = tmp_path / "events_track1_chord.yaml"
     _write_events_yaml(
         events,
         "version: 1\n"
@@ -381,8 +381,43 @@ def test_build_syx_from_events_rejects_duplicate_step_track(tmp_path: Path):
         "    length: inherit\n",
     )
 
-    with pytest.raises(SyxFileError, match="only supported on track 8"):
-        build_syx_from_events(events_yaml=events, output_file=tmp_path / "out.syx")
+    output = tmp_path / "out.syx"
+    result = build_syx_from_events(events_yaml=events, output_file=output)
+    built = output.read_bytes()
+
+    assert result.written_events == 2
+    assert [_read_trigger_slot_value(built, 0, rel) for rel in range(6)] == [0x00, 0x00, 0x3C, 0xFF, 0xFF, 0x00]
+    assert [_read_trigger_slot_value(built, 1, rel) for rel in range(6)] == [0x00, 0x00, 0x3E, 0xFF, 0xFF, 0x00]
+
+
+def test_build_syx_from_events_does_not_reject_more_than_128_note_events(tmp_path: Path):
+    events = tmp_path / "events_192.yaml"
+    event_rows = "".join(
+        (
+            f"  - step: {(index % 128) + 1}\n"
+            f"    track: {(index % 16) + 1}\n"
+            f"    note: C{1 + (index % 5)}\n"
+            "    velocity: inherit\n"
+            "    length: inherit\n"
+        )
+        for index in range(192)
+    )
+    events.write_text(
+        "version: 1\n"
+        "device: digitone2\n"
+        "pattern:\n"
+        "  mode: pattern-wide\n"
+        "  tempo: 120\n"
+        "  speed: 1/8\n"
+        "  total_steps: 128\n"
+        "events:\n"
+        f"{event_rows}",
+        encoding="utf-8",
+    )
+
+    result = build_syx_from_events(events_yaml=events, output_file=tmp_path / "out.syx")
+
+    assert result.written_events == 192
 
 
 def test_build_syx_from_events_encodes_track8_chord_group_velocity_length_and_time(tmp_path: Path):
