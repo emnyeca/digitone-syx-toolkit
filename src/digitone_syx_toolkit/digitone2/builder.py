@@ -201,7 +201,8 @@ def _clear_trigger_slots(data: bytearray) -> None:
 def _write_trigger_slots(data: bytearray, assignment: EventAssignment) -> int:
     if len(assignment.events) > TRIGGER_MAX_SLOTS:
         raise SyxFileError(
-            f"events count exceeds supported trigger slots: {len(assignment.events)} > {TRIGGER_MAX_SLOTS}"
+            "events count exceeds mapped Digitone II trigger record slots: "
+            f"{len(assignment.events)} > {TRIGGER_MAX_SLOTS}"
         )
 
     written = 0
