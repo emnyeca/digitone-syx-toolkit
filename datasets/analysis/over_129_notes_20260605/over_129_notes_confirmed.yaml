@@ -1,0 +1,113 @@
+### 1. trigger record array は少なくとも128 slotsではない
+
+アップロードされたSYXを既存のrecord modelで読んだところ、以下のように解釈できました。
+
+| file                                                | 読み取れたnon-empty trigger records | 内容                                         |
+| --------------------------------------------------- | -----------------------------: | ------------------------------------------ |
+| `01_EMPTY_PATTERN_128STEPS.syx`                     |                              0 | 空                                          |
+| `02_T01_128_SINGLE_NOTES_S01_TO_S128.syx`           |                            128 | Track 1 / Step 1〜128                       |
+| `03_T01_129_NOTES_ADD_T02_S01.syx`                  |                            129 | 129件目が Track 2 / Step 1                    |
+| `04_T01_128_PLUS_T02_16NOTES_S01.syx`               |                            144 | 129〜144件目が Track 2 / Step 1 の16 notes      |
+| `07_T01_S01_CHORD_16_NOTES.syx`                     |                             16 | Track 1 / Step 1 の16-note chord            |
+| `08_T01_120_SINGLE_NOTES_PLUS_T02_16NOTE_CHORD.syx` |                            136 | 121〜136件目が Track 2 / Step 1 の16-note chord |
+
+つまり、**129件目以降も、既存の6-byte trigger record arrayの延長として保存されている**と見てよいです。
+
+既存解析では、通常trigger recordは
+
+```text
+[track_index, step_index, pitch, velocity, length, micro_timing]
+```
+
+の6-byte fixed recordとして確認されており、Track 8 chord noteも同じrecordを複数並べるモデルで確認済みでした。 
+今回のデータで、少なくとも **slot 144までは同じモデルの延長で成立**しています。
+
+---
+
+## 2. 空template上では、trigger record領域は8192 slots相当に見える
+
+`01_EMPTY_PATTERN_128STEPS.syx` を同じrecord strideで走査すると、
+
+```text
+slot 1〜8192:
+  all fields = 0xFF
+
+slot 8193:
+  [0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00]
+```
+
+でした。
+
+これは、あなたの実機観測、
+
+```text
+16音 × 16trig × 8page × 4track = 8192 notes / pattern
+```
+
+と一致します。
+
+したがって、現時点ではこう見るのが自然です。
+
+```text
+Digitone II pattern trigger record capacity:
+  likely 8192 trigger records / pattern
+```
+
+ただし、これは **今回の空templateとrecord modelからの推定**です。
+実機で8192件フルのdumpを取って直接確認したわけではないので、実装上の定数名は `OBSERVED` や `INFERRED` を含めた方が安全です。
+
+例:
+
+```python
+DIGITONE2_TRIGGER_RECORD_SLOTS_OBSERVED = 8192
+```
+
+または
+
+```python
+DIGITONE2_TRIGGER_RECORD_SLOTS_INFERRED = 8192
+```
+
+---
+
+## 3. 129〜144件目の保存位置は連続recordで説明できる
+
+`04_T01_128_PLUS_T02_16NOTES_S01.syx` では、slot 129〜144が次のように読めました。
+
+```text
+slot 129: Track 2, Step 1, C5
+slot 130: Track 2, Step 1, D5
+slot 131: Track 2, Step 1, E5
+...
+slot 144: Track 2, Step 1, D7
+```
+
+つまり、**128件境界を越えてもchord groupが別構造に逃げていない**です。
+
+これは toolkit writer の修正方針に直結します。
+
+```text
+TRIGGER_MAX_SLOTS = 128
+```
+
+は誤りで、少なくとも現在のwriterが使っているrecord layoutは128を超えて続いています。
+
+---
+
+## 4. Track 9 / Track 16 のtrigger fieldも一応確認済み
+
+今回いただいた
+
+```text
+05_T09_S01_C5_SINGLE_NOTE.syx
+06_T16_S01_C5_SINGLE_NOTE.syx
+```
+
+も読めました。
+
+```text
+Track 9  -> track_index = 0x08
+Track 16 -> track_index = 0x0F
+```
+
+つまり toolkit のraw event writerとしては Track 1〜16対応でよさそうです。
