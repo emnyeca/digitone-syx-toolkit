@@ -43,7 +43,7 @@ class PatternSettings:
     tempo: float
     speed: str | None = None
     total_steps: int | None = None
-    change: str | None = None
+    change: int | str | None = None
     reset: str | None = None
 
 
@@ -183,7 +183,7 @@ def load_event_assignment_yaml(path: str | Path) -> EventAssignment:
 
     speed: str | None = None
     total_steps: int | None = None
-    change: str | None = None
+    change: int | str | None = None
     reset: str | None = None
     track_scale: dict[int, TrackScaleSettings] = {}
 
@@ -193,9 +193,13 @@ def load_event_assignment_yaml(path: str | Path) -> EventAssignment:
         if total_steps < 2 or total_steps > 128:
             raise SyxFileError("pattern.total_steps must be in 2..128")
     else:
-        change = _parse_symbolic_text(pattern.get("change", ""), "pattern.change")
-        if change != "OFF":
-            raise SyxFileError("pattern.change must be OFF in per-track mode")
+        raw_change = pattern.get("change", "")
+        if raw_change is False or (isinstance(raw_change, str) and raw_change.strip().upper() == "OFF"):
+            change = "OFF"
+        else:
+            change = _as_int(raw_change, "pattern.change")
+            if change < 2 or change > 1024:
+                raise SyxFileError("pattern.change must be OFF or an integer in 2..1024 in per-track mode")
         reset = _parse_symbolic_text(pattern.get("reset", ""), "pattern.reset")
         if reset != "INF":
             raise SyxFileError("pattern.reset must be INF in per-track mode")

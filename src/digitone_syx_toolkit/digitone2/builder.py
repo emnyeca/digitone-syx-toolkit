@@ -145,13 +145,18 @@ def _set_per_track_scale(data: bytearray, assignment: EventAssignment) -> None:
             raise SyxFileError(f"Unsupported track_scale[{track}].speed: {scale.speed}")
         data[TRACK_SPEED_OFFSETS[track]] = speed_code
 
-    if assignment.pattern.change != "OFF":
-        raise SyxFileError("per-track mode currently requires pattern.change=OFF")
     if assignment.pattern.reset != "INF":
         raise SyxFileError("per-track mode currently requires pattern.reset=INF")
 
-    data[PATTERN_CHANGE_EXTENDED_OFFSET] &= ~PATTERN_CHANGE_EXTENDED_MASK
-    data[PATTERN_CHANGE_LOW_OFFSET] = PATTERN_CHANGE_OFF_LOW_VALUE
+    if assignment.pattern.change == "OFF":
+        data[PATTERN_CHANGE_EXTENDED_OFFSET] &= ~PATTERN_CHANGE_EXTENDED_MASK
+        data[PATTERN_CHANGE_LOW_OFFSET] = PATTERN_CHANGE_OFF_LOW_VALUE
+    else:
+        change = assignment.pattern.change
+        if not isinstance(change, int):
+            raise SyxFileError("per-track mode requires pattern.change to be OFF or an integer")
+        data[PATTERN_CHANGE_EXTENDED_OFFSET] = (change >> 8) & 0xFF
+        data[PATTERN_CHANGE_LOW_OFFSET] = change & 0xFF
 
     data[PATTERN_RESET_EXTENDED_OFFSET] &= ~PATTERN_RESET_EXTENDED_MASK
     data[PATTERN_RESET_LOW_OFFSET] = PATTERN_RESET_INF_LOW_VALUE

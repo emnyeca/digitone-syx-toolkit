@@ -609,6 +609,31 @@ def test_load_event_assignment_yaml_accepts_per_track_mode(tmp_path: Path):
     assert parsed.track_scale[16].speed == "1/8"
 
 
+def test_load_event_assignment_yaml_accepts_per_track_integer_change(tmp_path: Path):
+    yaml_path = tmp_path / "events_per_track_change.yaml"
+    track_scale = "".join(
+        f"  {track}: {{length: 32, speed: '1/8'}}\n" for track in range(1, 17)
+    )
+    yaml_path.write_text(
+        "version: 1\n"
+        "device: digitone2\n"
+        "pattern:\n"
+        "  mode: per-track\n"
+        "  tempo: 120\n"
+        "  change: 32\n"
+        "  reset: INF\n"
+        "track_scale:\n"
+        f"{track_scale}"
+        "events: []\n",
+        encoding="utf-8",
+    )
+
+    parsed = load_event_assignment_yaml(yaml_path)
+
+    assert parsed.pattern.change == 32
+    assert parsed.pattern.reset == "INF"
+
+
 def test_load_event_assignment_yaml_rejects_per_track_missing_track16(tmp_path: Path):
     yaml_path = tmp_path / "events_per_track_missing.yaml"
     track_scale = "".join(
@@ -679,7 +704,7 @@ def test_load_event_assignment_yaml_rejects_per_track_invalid_speed(tmp_path: Pa
         load_event_assignment_yaml(yaml_path)
 
 
-def test_load_event_assignment_yaml_rejects_per_track_change_other_than_off(tmp_path: Path):
+def test_load_event_assignment_yaml_rejects_per_track_change_out_of_range(tmp_path: Path):
     yaml_path = tmp_path / "events_per_track_change_bad.yaml"
     track_scale = "".join(
         f"  {track}: {{length: 32, speed: '1/8'}}\n" for track in range(1, 17)
@@ -690,7 +715,7 @@ def test_load_event_assignment_yaml_rejects_per_track_change_other_than_off(tmp_
         "pattern:\n"
         "  mode: per-track\n"
         "  tempo: 120\n"
-        "  change: 2\n"
+        "  change: 1025\n"
         "  reset: INF\n"
         "track_scale:\n"
         f"{track_scale}"
@@ -698,7 +723,7 @@ def test_load_event_assignment_yaml_rejects_per_track_change_other_than_off(tmp_
         encoding="utf-8",
     )
 
-    with pytest.raises(SyxFileError, match="pattern.change must be OFF"):
+    with pytest.raises(SyxFileError, match="pattern.change must be OFF or an integer in 2..1024"):
         load_event_assignment_yaml(yaml_path)
 
 
