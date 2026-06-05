@@ -1,0 +1,95 @@
+analysis_id: pattern_change_encoding_20260605
+analysis: pattern_change_encoding
+fixed_context:
+  pattern_state: empty pattern
+  mode_state: per-track
+  trigger_state: none
+  reset_display: 16
+  allowed_controls_touched:
+  - change
+raw_capture_dir: captures/Pattern_Change_Encoding_20260605
+sequence:
+- index: 1
+  file: captures/Pattern_Change_Encoding_20260605/01_PERTRACK_EMPTY_CHANGE_OFF_RESET_16.syx
+  pattern_change: OFF
+- index: 2
+  file: captures/Pattern_Change_Encoding_20260605/02_PERTRACK_EMPTY_CHANGE_002_RESET_16.syx
+  pattern_change: 2
+- index: 3
+  file: captures/Pattern_Change_Encoding_20260605/03_PERTRACK_EMPTY_CHANGE_016_RESET_16.syx
+  pattern_change: 16
+- index: 4
+  file: captures/Pattern_Change_Encoding_20260605/04_PERTRACK_EMPTY_CHANGE_032_RESET_16.syx
+  pattern_change: 32
+- index: 5
+  file: captures/Pattern_Change_Encoding_20260605/05_PERTRACK_EMPTY_CHANGE_064_RESET_16.syx
+  pattern_change: 64
+- index: 6
+  file: captures/Pattern_Change_Encoding_20260605/06_PERTRACK_EMPTY_CHANGE_128_RESET_16.syx
+  pattern_change: 128
+- index: 7
+  file: captures/Pattern_Change_Encoding_20260605/07_PERTRACK_EMPTY_CHANGE_256_RESET_16.syx
+  pattern_change: 256
+- index: 8
+  file: captures/Pattern_Change_Encoding_20260605/08_PERTRACK_EMPTY_CHANGE_512_RESET_16.syx
+  pattern_change: 512
+- index: 9
+  file: captures/Pattern_Change_Encoding_20260605/09_PERTRACK_EMPTY_CHANGE_1024_RESET_16.syx
+  pattern_change: 1024
+focused_offsets:
+  reset_extended_candidate: 101505
+  reset_low_candidate: 101507
+  change_low_control_candidate: 101506
+  change_high_candidate: 101508
+  change_low_candidate: 101509
+generated:
+  requested_pairs:
+  - pair: OFF_to_2
+    output_yaml: datasets/analysis/pattern_change_encoding_20260605/pair_off_to_002.yaml
+    difference_count: 2
+    changed_offsets:
+    - 101509
+    - 114114
+  - pair: 2_to_16
+    output_yaml: datasets/analysis/pattern_change_encoding_20260605/pair_002_to_016.yaml
+    difference_count: 2
+    changed_offsets:
+    - 101509
+    - 114114
+  - pair: 128_to_256
+    output_yaml: datasets/analysis/pattern_change_encoding_20260605/pair_128_to_256.yaml
+    difference_count: 3
+    changed_offsets:
+    - 101506
+    - 101508
+    - 114114
+  - pair: 256_to_512
+    output_yaml: datasets/analysis/pattern_change_encoding_20260605/pair_256_to_512.yaml
+    difference_count: 2
+    changed_offsets:
+    - 101508
+    - 114114
+  - pair: 512_to_1024
+    output_yaml: datasets/analysis/pattern_change_encoding_20260605/pair_512_to_1024.yaml
+    difference_count: 2
+    changed_offsets:
+    - 101508
+    - 114114
+result:
+  encoding_confirmed_for_values:
+  - OFF
+  - 2
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  - 512
+  - 1024
+  change_101508_is_multi_bit_field: true
+  old_single_mask_0x04_is_insufficient: true
+  reset_offsets_unchanged_across_all_captures: true
+notes:
+- Offset 101508 is not a single 0x04 extended mask; it stores the high byte field for numeric CHANGE values.
+- Offset 101506 carries the MSB control bit for the low byte at 101509 when CHANGE is 128.
+- Offsets 101505 and 101507 were unchanged across this capture set, but the capture was taken with RESET=16, not RESET=INF.
