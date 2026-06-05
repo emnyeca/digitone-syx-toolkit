@@ -15,6 +15,9 @@ from .constants import (
     LENGTH_CODE_MAP,
     PATTERN_CHANGE_EXTENDED_MASK,
     PATTERN_CHANGE_EXTENDED_OFFSET,
+    PATTERN_CHANGE_HIGH_OFFSET,
+    PATTERN_CHANGE_LOW_CONTROL_OFFSET,
+    PATTERN_CHANGE_LOW_MSB_MASK,
     PATTERN_CHANGE_LOW_OFFSET,
     PATTERN_CHANGE_OFF_LOW_VALUE,
     PATTERN_MODE_OFFSET,
@@ -149,14 +152,21 @@ def _set_per_track_scale(data: bytearray, assignment: EventAssignment) -> None:
         raise SyxFileError("per-track mode currently requires pattern.reset=INF")
 
     if assignment.pattern.change == "OFF":
-        data[PATTERN_CHANGE_EXTENDED_OFFSET] &= ~PATTERN_CHANGE_EXTENDED_MASK
+        data[PATTERN_CHANGE_LOW_CONTROL_OFFSET] &= ~PATTERN_CHANGE_LOW_MSB_MASK
+        data[PATTERN_CHANGE_HIGH_OFFSET] = 0
         data[PATTERN_CHANGE_LOW_OFFSET] = PATTERN_CHANGE_OFF_LOW_VALUE
     else:
         change = assignment.pattern.change
         if not isinstance(change, int):
             raise SyxFileError("per-track mode requires pattern.change to be OFF or an integer")
-        data[PATTERN_CHANGE_EXTENDED_OFFSET] = (change >> 8) & 0xFF
-        data[PATTERN_CHANGE_LOW_OFFSET] = change & 0xFF
+        data[PATTERN_CHANGE_HIGH_OFFSET] = (change >> 8) & 0xFF
+        set_packed_byte(
+            data,
+            payload_offset=PATTERN_CHANGE_LOW_OFFSET,
+            control_offset=PATTERN_CHANGE_LOW_CONTROL_OFFSET,
+            msb_mask=PATTERN_CHANGE_LOW_MSB_MASK,
+            value=change & 0xFF,
+        )
 
     data[PATTERN_RESET_EXTENDED_OFFSET] &= ~PATTERN_RESET_EXTENDED_MASK
     data[PATTERN_RESET_LOW_OFFSET] = PATTERN_RESET_INF_LOW_VALUE

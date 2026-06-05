@@ -7,6 +7,9 @@ from digitone_syx_toolkit.digitone2.constants import (
     CHECKSUM_LO_OFFSET,
     PATTERN_CHANGE_EXTENDED_MASK,
     PATTERN_CHANGE_EXTENDED_OFFSET,
+    PATTERN_CHANGE_HIGH_OFFSET,
+    PATTERN_CHANGE_LOW_CONTROL_OFFSET,
+    PATTERN_CHANGE_LOW_MSB_MASK,
     PATTERN_CHANGE_LOW_OFFSET,
     PATTERN_CHANGE_OFF_LOW_VALUE,
     PATTERN_MODE_OFFSET,
@@ -169,11 +172,27 @@ def test_per_track_mode_writes_track_lengths_speeds_change_reset_and_checksum(tm
     assert _decode_checksum(built) == expected_checksum
 
 
-@pytest.mark.parametrize("change, expected_high, expected_low", [(320, 0x01, 0x40), (1024, 0x04, 0x00)])
-def test_per_track_mode_writes_integer_change(tmp_path: Path, change: int, expected_high: int, expected_low: int):
+@pytest.mark.parametrize(
+    "change, expected_control, expected_high, expected_low",
+    [
+        (32, 0x00, 0x00, 0x20),
+        (128, PATTERN_CHANGE_LOW_MSB_MASK, 0x00, 0x00),
+        (256, 0x00, 0x01, 0x00),
+        (512, 0x00, 0x02, 0x00),
+        (1024, 0x00, 0x04, 0x00),
+    ],
+)
+def test_per_track_mode_writes_integer_change(
+    tmp_path: Path,
+    change: int,
+    expected_control: int,
+    expected_high: int,
+    expected_low: int,
+):
     built = _build_with_per_track(tmp_path, change=change)
 
-    assert built[PATTERN_CHANGE_EXTENDED_OFFSET] == expected_high
+    assert built[PATTERN_CHANGE_LOW_CONTROL_OFFSET] & PATTERN_CHANGE_LOW_MSB_MASK == expected_control
+    assert built[PATTERN_CHANGE_HIGH_OFFSET] == expected_high
     assert built[PATTERN_CHANGE_LOW_OFFSET] == expected_low
     assert built[PATTERN_RESET_EXTENDED_OFFSET] & PATTERN_RESET_EXTENDED_MASK == 0
     assert built[PATTERN_RESET_LOW_OFFSET] == PATTERN_RESET_INF_LOW_VALUE

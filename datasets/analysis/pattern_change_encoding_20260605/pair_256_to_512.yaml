@@ -1,0 +1,22 @@
+comparison: 256_to_512
+before:
+  file: captures/Pattern_Change_Encoding_20260605/07_PERTRACK_EMPTY_CHANGE_256_RESET_16.syx
+  pattern_change: 256
+after:
+  file: captures/Pattern_Change_Encoding_20260605/08_PERTRACK_EMPTY_CHANGE_512_RESET_16.syx
+  pattern_change: 512
+difference_count: 2
+changed_offsets:
+- offset: 101508
+  before_hex: '0x01'
+  after_hex: '0x02'
+  interpretation: change_high_candidate
+- offset: 114114
+  before_hex: '0x3D'
+  after_hex: '0x3E'
+  interpretation: checksum
+focused_offsets:
+  101505: {before_hex: '0x00', after_hex: '0x00'}
+  101507: {before_hex: '0x10', after_hex: '0x10'}
+  101508: {before_hex: '0x01', after_hex: '0x02'}
+  101509: {before_hex: '0x00', after_hex: '0x00'}

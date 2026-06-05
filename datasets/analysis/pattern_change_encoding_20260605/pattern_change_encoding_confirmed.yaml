@@ -1,0 +1,65 @@
+analysis_target: pattern_change_encoding_20260605
+status: confirmed
+field:
+  summary:
+    off_low_value: '0x01'
+    low_byte_offset: 101509
+    low_byte_msb_control_offset: 101506
+    low_byte_msb_control_mask: '0x10'
+    high_byte_offset: 101508
+    reset_offsets_unchanged_for_reset_16: true
+  encoding:
+    OFF:
+      offset_101506: '0x00'
+      offset_101508: '0x00'
+      offset_101509: '0x01'
+    2:
+      offset_101506: '0x00'
+      offset_101508: '0x00'
+      offset_101509: '0x02'
+    16:
+      offset_101506: '0x00'
+      offset_101508: '0x00'
+      offset_101509: '0x10'
+    32:
+      offset_101506: '0x00'
+      offset_101508: '0x00'
+      offset_101509: '0x20'
+    64:
+      offset_101506: '0x00'
+      offset_101508: '0x00'
+      offset_101509: '0x40'
+    128:
+      offset_101506: '0x10'
+      offset_101508: '0x00'
+      offset_101509: '0x00'
+    256:
+      offset_101506: '0x00'
+      offset_101508: '0x01'
+      offset_101509: '0x00'
+    512:
+      offset_101506: '0x00'
+      offset_101508: '0x02'
+      offset_101509: '0x00'
+    1024:
+      offset_101506: '0x00'
+      offset_101508: '0x04'
+      offset_101509: '0x00'
+  reset_16_candidate_values:
+    101505: '0x00'
+    101507: '0x10'
+interpretation:
+  numeric_change:
+    high_byte: offset_101508
+    low_byte_low7: offset_101509
+    low_byte_msb_control:
+      offset: 101506
+      mask: '0x10'
+  implication:
+  - PATTERN_CHANGE_EXTENDED_MASK = 0x04 is only the observed 1024 high-byte value, not the whole numeric CHANGE high field.
+  - Numeric writer must preserve unrelated bits at 101506 while setting/clearing only mask 0x10 for the low byte MSB.
+  - Numeric writer must set 101508 to value >> 8 for confirmed values up to 1024.
+notes:
+- The dataset directly confirms powers-of-two boundary values used by Song mode section advance.
+- RESET was set to 16 in this capture set; 101507=0x10 must not be interpreted as RESET=INF.
+- Intermediate non-power-of-two values above 128 are inferred from the high/low byte model, with CHANGE 320 covered by writer tests rather than direct capture in this dataset.
